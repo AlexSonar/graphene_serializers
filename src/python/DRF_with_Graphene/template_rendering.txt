@@ -1,0 +1,36 @@
+import { ApolloProvider } from "react-apollo";
+import ApolloClient from "apollo-client";
+import { HttpLink } from "apollo-link-http";
+import { InMemoryCache as Cache } from "apollo-cache-inmemory";
+import { ApolloLink } from "apollo-link";
+import fetch from "unfetch";
+
+const uri = UrlUtils.makeUrl(Urls.graphQl);
+const AuthLink = (operation, next) => {
+  const token = window.csrf_token; 
+
+  operation.setContext(context => ({
+    ...context,
+    headers: {
+      ...context.headers,
+      "X-CSRFToken": token
+    }
+  }));
+
+  return next(operation);
+};
+
+const link = ApolloLink.from([
+  AuthLink,
+  new HttpLink({
+    uri,
+    credentials: "same-origin",
+    fetch // override fetch implementation for polyfills
+  })
+]);
+
+const apollo = new ApolloClient({
+  link,
+  cache: new Cache().restore({})
+});
+
